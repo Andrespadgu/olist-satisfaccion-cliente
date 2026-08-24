@@ -1,0 +1,26 @@
+# --- Datos crudos de Olist (descargar de Kaggle; ver data/raw/README.md) ---
+data/raw/*.csv
+
+# --- Derivados y salidas regeneradas por el pipeline ---
+data/processed/*
+!data/processed/.gitkeep
+outputs/charts/*
+!outputs/charts/.gitkeep
+outputs/reports/*.json
+
+# Reportes .md que generan los pasos opcionales (se regeneran al correr)
+PRUEBAS-NORMALIDAD.md
+ANALISIS-VARIABLES-CATEGORICAS.md
+ENCODING-FEATURES-APLICADO.md
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db
