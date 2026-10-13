@@ -1,4 +1,4 @@
-# Olist — Análisis Probabilístico de Satisfacción de Clientes
+# Olist - Análisis Probabilístico de Satisfacción de Clientes
 
 [![Checks](https://img.shields.io/badge/reproducibilidad-64%2F64%20checks%20OK-brightgreen)](reproducir_informe.py)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
