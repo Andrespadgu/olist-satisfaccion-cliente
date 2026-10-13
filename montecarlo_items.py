@@ -4,24 +4,22 @@
 2) BOOTSTRAP: incertidumbre del impacto (detractores evitables) y bandas de la proyeccion.
 Aislado del tiempo: solo pedidos entregados A TIEMPO.
 """
-import os
 import json
 import numpy as np
 import pandas as pd
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-PROC = os.path.join(BASE, "data", "processed")
-RAWD = os.path.join(BASE, "data", "raw")
+BASE = r"C:\Users\ANDRES\Desktop\Maquinas no supervisadas"
+PROC = BASE + r"\data\processed"
 rng = np.random.default_rng(42)
 
-# datos on-time  (items desde data/raw: mismo mapeo pedido->vendedor que la version limpia)
-it = pd.read_csv(os.path.join(RAWD, "olist_order_items_dataset.csv"), usecols=["order_id", "seller_id"])
+# datos on-time
+it = pd.read_csv(PROC + r"\olist_order_items_clean.csv", usecols=["order_id", "seller_id"])
 nsel = it.groupby("order_id")["seller_id"].nunique().rename("n_sel")
 # vendedor principal por pedido (el de mas items; desempate por primero) para el cluster bootstrap
 prim = (it.groupby(["order_id", "seller_id"]).size().reset_index(name="c")
           .sort_values(["order_id", "c"], ascending=[True, False])
           .drop_duplicates("order_id").set_index("order_id")["seller_id"])
-cli = pd.read_csv(os.path.join(PROC, "analitico_cliente.csv"),
+cli = pd.read_csv(PROC + r"\analitico_cliente.csv",
                   usecols=["order_id", "review_score", "dias_retraso", "order_status", "n_items"])
 cli = cli[(cli.order_status == "delivered") & (cli.dias_retraso <= 0)].copy()
 cli["seller_id"] = cli["order_id"].map(prim)
@@ -117,7 +115,6 @@ proj = {"shares": shares, "median": med, "lo": plo, "hi": phi,
 
 mc = {"perm": perm, "boot_today": {**bt, "hist": boot_hist}, "boot_today_cluster": btc,
       "proj": proj, "n_ontime": int(N), "multi_share_now": round(float(multi.mean()), 4)}
-out = os.path.join(BASE, "outputs", "reports", "montecarlo_items.json")
-os.makedirs(os.path.dirname(out), exist_ok=True)
+out = BASE + r"\outputs\reports\montecarlo_items.json"
 json.dump(mc, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print("Guardado:", out)

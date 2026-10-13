@@ -12,45 +12,41 @@ final VERIFICA que cada número citado en el informe coincide exactamente con el
 resultado recalculado. Sale con código != 0 si algo no cuadra.
 
 --------------------------------------------------------------------------------
-DATOS (una sola vez, antes de correr)
---------------------------------------------------------------------------------
-Descarga el "Brazilian E-Commerce Public Dataset by Olist" desde Kaggle y coloca
-los 9 CSV en la carpeta  data/raw/  (ver data/raw/README.md). El pipeline no
-modifica nunca esos archivos crudos.
-
---------------------------------------------------------------------------------
 PIPELINE (cada paso es un script real del proyecto; aquí solo se orquestan)
 --------------------------------------------------------------------------------
-  [núcleo — produce TODAS las cifras citadas en el informe, solo desde data/raw]
-  Paso 1  build_derivadas.py         raw/* -> data/processed/analitico_cliente.csv
-                                              + analitico_vendedor.csv
-          (limpieza + derivación: reconstruye las tablas analíticas maestras desde
-           data/raw. Calcula fechas->datetime, días de retraso, tiempo de entrega,
+  Paso 1  build_derivadas.py       raw/*  -> data/processed/analitico_cliente.csv
+                                            + analitico_vendedor.csv
+          (limpieza + derivación: reconstruye las tablas analíticas maestras
+           desde data/raw, porque la limpieza previa eliminó las llaves de unión.
+           Aquí se calculan fechas->datetime, días de retraso, tiempo de entrega,
            distancia vendedor-cliente (haversine sobre geolocation), n_items, etc.)
-  Paso 5  analisis_inferencial.py    -> outputs/reports/resultados.json
+  Paso 2  pruebas_normalidad.py    Shapiro-Wilk + Anderson-Darling + KS
+          (justifica la decisión de usar SOLO pruebas NO paramétricas: 0/21
+           variables numéricas son normales)
+  Paso 3  analisis_categoricas.py  descripción y validación de variables categóricas
+  Paso 4  encoding_features.py     ingeniería de features / encoding (datasets *_encoded)
+  Paso 5  analisis_inferencial.py  -> outputs/reports/resultados.json
           (los 11 conceptos estadísticos obligatorios + hipótesis H1-H4;
            Anexo A y los factores §1-§2 del informe salen de aquí)
   Paso 6  analisis_comportamiento.py -> resultados_comportamiento.json
           (comportamiento operativo del vendedor; §4 del informe)
-  Paso 8  montecarlo_items.py        -> montecarlo_items.json
+  Paso 7  analisis_dashboard.py    -> resultados_dashboard.json  (H5-H7, D1-D2)
+  Paso 8  montecarlo_items.py      -> montecarlo_items.json
           (SIMULACIONES: prueba de permutación + bootstrap i.i.d. + cluster
            bootstrap por vendedor + proyección; §3 y Anexo B del informe)
 
-  [opcionales — soportan la decisión de usar pruebas no paramétricas; se omiten
-   automáticamente si no están los data/processed/*_clean.csv, ya que NINGUNA cifra
-   del informe depende de ellos]
-  Paso 2  pruebas_normalidad.py      Shapiro-Wilk + Anderson-Darling + KS (0/21 normales)
-  Paso 3  analisis_categoricas.py    descripción y validación de variables categóricas
-  Paso 4  encoding_features.py       ingeniería de features / encoding
+  (La construcción del dashboard —build_payload.py / build_dashboard.py— es
+   presentación, no genera cifras nuevas del informe, y no se incluye aquí.)
 
 --------------------------------------------------------------------------------
 USO
 --------------------------------------------------------------------------------
-  python reproducir_informe.py            # corre el pipeline + verifica las 64 cifras
+  python reproducir_informe.py            # corre el pipeline completo + verifica
   python reproducir_informe.py --verify   # NO recalcula; solo verifica los JSON ya
                                            # presentes en outputs/reports/
 
-Requisitos: ver requirements.txt. Ejecutable desde cualquier carpeta: fija su ruta.
+Requisitos: numpy, pandas, scipy, matplotlib, statsmodels (los mismos que el
+proyecto). Ejecutar desde cualquier directorio: el script fija su propia ruta.
 ================================================================================
 """
 import os
@@ -76,18 +72,16 @@ os.environ.setdefault("MPLBACKEND", "Agg")   # matplotlib headless, sin ventanas
 PROC = os.path.join(BASE, "data", "processed")
 REP = os.path.join(BASE, "outputs", "reports")
 
-# (titulo, script, opcional)  — opcional=True se omite si faltan los *_clean.csv
 STAGES = [
-    ("Paso 1  Limpieza + derivación (raw -> tablas analíticas)", "build_derivadas.py", False),
-    ("Paso 2  Pruebas de normalidad (Shapiro/Anderson/KS)",      "pruebas_normalidad.py", True),
-    ("Paso 3  Análisis de variables categóricas",                "analisis_categoricas.py", True),
-    ("Paso 4  Encoding / ingeniería de features",                "encoding_features.py", True),
-    ("Paso 5  Inferencia: 11 conceptos + hipótesis H1-H4",       "analisis_inferencial.py", False),
-    ("Paso 6  Comportamiento operativo del vendedor",            "analisis_comportamiento.py", False),
-    ("Paso 8  Simulaciones Monte Carlo (permutación+bootstrap)", "montecarlo_items.py", False),
+    ("Paso 1  Limpieza + derivación (raw -> tablas analíticas)", "build_derivadas.py"),
+    ("Paso 2  Pruebas de normalidad (Shapiro/Anderson/KS)",      "pruebas_normalidad.py"),
+    ("Paso 3  Análisis de variables categóricas",                "analisis_categoricas.py"),
+    ("Paso 4  Encoding / ingeniería de features",                "encoding_features.py"),
+    ("Paso 5  Inferencia: 11 conceptos + hipótesis H1-H4",       "analisis_inferencial.py"),
+    ("Paso 6  Comportamiento operativo del vendedor",            "analisis_comportamiento.py"),
+    ("Paso 7  Análisis extra del dashboard (H5-H7, D1-D2)",      "analisis_dashboard.py"),
+    ("Paso 8  Simulaciones Monte Carlo (permutación+bootstrap)", "montecarlo_items.py"),
 ]
-# Los pasos opcionales leen data/processed/*_clean.csv (limpieza documentada).
-CLEAN_SENTINEL = os.path.join(PROC, "olist_order_items_clean.csv")
 
 
 def banner(txt):
@@ -97,19 +91,9 @@ def banner(txt):
 
 
 def run_pipeline():
-    banner("EJECUTANDO PIPELINE (desde data/raw)")
-    for d in (PROC, os.path.join(BASE, "outputs", "charts"), REP):
-        os.makedirs(d, exist_ok=True)
-    tiene_clean = os.path.exists(CLEAN_SENTINEL)
-    if not tiene_clean:
-        print("\n[i] No se encontraron data/processed/*_clean.csv: se omiten los pasos\n"
-              "    opcionales (normalidad/categóricas/encoding). NINGUNA cifra del informe\n"
-              "    depende de ellos; el núcleo se reproduce solo desde data/raw.")
+    banner("EJECUTANDO PIPELINE COMPLETO (desde data/raw)")
     t_all = time.time()
-    for titulo, script, opcional in STAGES:
-        if opcional and not tiene_clean:
-            print("\n--- %s  [%s]  -> OMITIDO (faltan *_clean.csv) ---" % (titulo, script))
-            continue
+    for titulo, script in STAGES:
         ruta = os.path.join(BASE, script)
         if not os.path.exists(ruta):
             raise FileNotFoundError("Falta el script del pipeline: " + script)
@@ -256,7 +240,7 @@ def verificar():
     chk("§3/AnexoB", "Detractores con 4 ítems = 32%", tasas[4], 32.0, 1.5)
     chk("§3/AnexoB", "Detractores con 5+ ítems = 32%", tasas[5], 32.0, 1.5)
 
-    it = pd.read_csv(os.path.join(BASE, "data", "raw", "olist_order_items_dataset.csv"), usecols=["order_id", "seller_id"])
+    it = pd.read_csv(os.path.join(PROC, "olist_order_items_clean.csv"), usecols=["order_id", "seller_id"])
     nsel = it.groupby("order_id")["seller_id"].nunique()
     ot = ot.assign(n_sel=ot["order_id"].map(nsel))
     mult = ot[ot["n_items"] >= 2]

@@ -19,14 +19,11 @@ para recuperar esas llaves, y se REPLICAN las decisiones de limpieza documentada
 en LIMPIEZA-DATOS-PROGRESO.md (p.ej. eliminar productos sin categoria, conservar
 multipagos, mantener nulos de fechas como NaN). Esto mantiene trazabilidad total.
 """
-import os
 import pandas as pd
 import numpy as np
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.join(_HERE, "data", "raw")
-OUT = os.path.join(_HERE, "data", "processed")
-os.makedirs(OUT, exist_ok=True)
+RAW = r"C:/Users/ANDRES/Desktop/Maquinas no supervisadas/data/raw"
+OUT = r"C:/Users/ANDRES/Desktop/Maquinas no supervisadas/data/processed"
 
 DATE_COLS_ORDERS = [
     "order_purchase_timestamp", "order_approved_at",

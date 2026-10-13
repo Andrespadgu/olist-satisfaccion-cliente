@@ -5,16 +5,13 @@ Solo pruebas NO parametricas. Decision por TAMANO DE EFECTO.
 Excluye sellers con n_pedidos < 5 (artefacto de denominador).
 NaN nunca se imputa a 0: se descarta por par de variables (pairwise).
 """
-import os
 import json
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.join(_HERE, "data", "processed", "analitico_vendedor.csv")
-OUT = os.path.join(_HERE, "outputs", "reports", "resultados_comportamiento.json")
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
+RAW = r"C:\Users\ANDRES\Desktop\Maquinas no supervisadas\data\processed\analitico_vendedor.csv"
+OUT = r"C:\Users\ANDRES\Desktop\Maquinas no supervisadas\outputs\reports\resultados_comportamiento.json"
 
 MAP_REGION = {}
 for reg, estados in {

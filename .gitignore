@@ -1,17 +1,14 @@
 # --- Datos crudos de Olist (descargar de Kaggle; ver data/raw/README.md) ---
 data/raw/*.csv
 
-# --- Derivados y salidas regeneradas por el pipeline ---
+# --- Derivados del pipeline (regenerables) ---
 data/processed/*
 !data/processed/.gitkeep
-outputs/charts/*
-!outputs/charts/.gitkeep
 outputs/reports/*.json
 
-# Reportes .md que generan los pasos opcionales (se regeneran al correr)
-PRUEBAS-NORMALIDAD.md
-ANALISIS-VARIABLES-CATEGORICAS.md
-ENCODING-FEATURES-APLICADO.md
+# --- Charts: los PNG estáticos SÍ se versionan (los usa el README) ---
+# Solo se excluye el .gitkeep placeholder
+outputs/charts/.gitkeep
 
 # --- Python ---
 __pycache__/
@@ -21,6 +18,15 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
+# --- Claude Code internals ---
+.claude/
+CLAUDE.md
+DISENO-INFORME-PROGRESO.md
+DERIVADAS-PROGRESO.md
+LIMPIEZA-DATOS-PROGRESO.md
+
 # --- Sistema ---
 .DS_Store
 Thumbs.db
+_tectonic/
+_tectonic.zip
