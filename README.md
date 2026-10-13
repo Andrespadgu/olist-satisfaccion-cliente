@@ -122,7 +122,7 @@ Todos los resultados numéricos del informe ejecutivo están serializados en
 
 ## Dataset
 
-[Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — 9 tablas,
+[Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) - 9 tablas,
 ~96 000 pedidos entregados, 2016–2018. Los archivos crudos van en `data/raw/` (no incluidos en el repo por tamaño;
 descargar de Kaggle).
 
@@ -130,7 +130,7 @@ descargar de Kaggle).
 
 ## Autor
 
-**Andrés Padilla** — Análisis de datos · Estadística aplicada · Python  
+**Andrés Padilla** - Análisis de datos · Estadística aplicada · Python  
 [LinkedIn](https://www.linkedin.com/in/andrespadilla) · padillachl815@gmail.com
 
 ---
